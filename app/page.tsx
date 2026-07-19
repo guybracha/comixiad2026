@@ -16,14 +16,28 @@ function withLikeCount(rows: (Series & { likes?: { count: number }[] })[] | null
   }));
 }
 
+const GENRE_GRADIENTS = [
+  "from-violet-500 to-fuchsia-500",
+  "from-fuchsia-500 to-rose-500",
+  "from-rose-500 to-orange-400",
+  "from-orange-400 to-amber-400",
+  "from-emerald-500 to-teal-400",
+  "from-teal-400 to-cyan-500",
+  "from-cyan-500 to-blue-500",
+  "from-blue-500 to-violet-500",
+];
+
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const { data: latestRaw } = await supabase
-    .from("series")
-    .select("*, profiles(*), likes(count)")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const [{ data: latestRaw }, { data: genres }] = await Promise.all([
+    supabase
+      .from("series")
+      .select("*, profiles(*), likes(count)")
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabase.from("genres").select("*").order("name"),
+  ]);
 
   const latest = withLikeCount(latestRaw);
   const popular = [...latest].sort(
@@ -100,6 +114,31 @@ export default async function HomePage() {
                 Popular this week
               </h2>
               <SeriesGrid series={popular.slice(0, 5)} />
+            </section>
+          </Reveal>
+        )}
+
+        {genres && genres.length > 0 && (
+          <Reveal className="mb-12">
+            <section>
+              <h2 className="section-title mb-1 text-xl font-bold">
+                Browse by genre
+              </h2>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Whatever you&apos;re into — there&apos;s a comic for it.
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {genres.map((g, i) => (
+                  <Link
+                    key={g.id}
+                    href={`/browse?genre=${g.slug}`}
+                    data-reveal
+                    className={`bg-gradient-to-br ${GENRE_GRADIENTS[i % GENRE_GRADIENTS.length]} flex h-16 items-center justify-center rounded-xl px-3 text-center text-sm font-bold text-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg`}
+                  >
+                    {g.name}
+                  </Link>
+                ))}
+              </div>
             </section>
           </Reveal>
         )}

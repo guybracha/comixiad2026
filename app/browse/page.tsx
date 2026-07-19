@@ -54,9 +54,25 @@ export default async function BrowsePage({ searchParams }: Props) {
         .limit(12)
     : { data: null };
 
+  const activeGenre = genre
+    ? (genres ?? []).find((g) => g.slug === genre)?.name
+    : null;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold">Browse comics</h1>
+      <h1 className="mb-6 text-2xl font-bold">
+        {activeGenre ? (
+          <>
+            <span className="text-gradient">{activeGenre}</span> comics
+          </>
+        ) : q ? (
+          <>
+            Results for <span className="text-gradient">“{q}”</span>
+          </>
+        ) : (
+          "Browse comics"
+        )}
+      </h1>
       <BrowseFilters genres={genres ?? []} />
 
       {creators && creators.length > 0 && (

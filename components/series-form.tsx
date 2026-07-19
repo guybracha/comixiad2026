@@ -74,6 +74,9 @@ export function SeriesForm({ userId, genres, series, selectedGenreIds }: Props) 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return toast.error("Title is required.");
+    if (genreIds.length === 0) {
+      return toast.error("Pick at least one genre so readers can find your comic.");
+    }
     setSaving(true);
     const supabase = createClient();
 
@@ -273,7 +276,7 @@ export function SeriesForm({ userId, genres, series, selectedGenreIds }: Props) 
       </div>
 
       <div className="grid gap-2">
-        <Label>Genres (up to 4)</Label>
+        <Label>Genres (pick 1–4)</Label>
         <div className="flex flex-wrap gap-2">
           {genres.map((g) => (
             <Badge
