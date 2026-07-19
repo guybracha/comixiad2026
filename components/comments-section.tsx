@@ -12,15 +12,26 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Comment } from "@/lib/types";
 
 interface Props {
-  chapterId: string;
+  /** "comments" (chapter comments) or "series_comments" */
+  table?: "comments" | "series_comments";
+  /** id of the chapter or the series the comments belong to */
+  targetId: string;
   userId: string | null;
   comments: Comment[];
+  title?: string;
 }
 
-export function CommentsSection({ chapterId, userId, comments }: Props) {
+export function CommentsSection({
+  table = "comments",
+  targetId,
+  userId,
+  comments,
+  title = "Comments",
+}: Props) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const targetColumn = table === "comments" ? "chapter_id" : "series_id";
 
   async function post(e: React.FormEvent) {
     e.preventDefault();
@@ -30,8 +41,8 @@ export function CommentsSection({ chapterId, userId, comments }: Props) {
     if (!body.trim()) return;
     setPosting(true);
     const supabase = createClient();
-    const { error } = await supabase.from("comments").insert({
-      chapter_id: chapterId,
+    const { error } = await supabase.from(table).insert({
+      [targetColumn]: targetId,
       user_id: userId,
       body: body.trim(),
     });
@@ -43,7 +54,7 @@ export function CommentsSection({ chapterId, userId, comments }: Props) {
 
   async function remove(id: string) {
     const supabase = createClient();
-    const { error } = await supabase.from("comments").delete().eq("id", id);
+    const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) return toast.error(error.message);
     router.refresh();
   }
@@ -51,7 +62,7 @@ export function CommentsSection({ chapterId, userId, comments }: Props) {
   return (
     <section className="mx-auto w-full max-w-3xl">
       <h2 className="mb-4 text-lg font-bold">
-        Comments ({comments.length})
+        {title} ({comments.length})
       </h2>
 
       <form onSubmit={post} className="mb-6 flex flex-col gap-2">

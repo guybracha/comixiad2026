@@ -175,7 +175,8 @@ export default async function ChapterPage({ params }: Props) {
 
       <Separator className="mx-auto my-8 max-w-3xl" />
       <CommentsSection
-        chapterId={chapter.id}
+        table="comments"
+        targetId={chapter.id}
         userId={user?.id ?? null}
         comments={comments ?? []}
       />

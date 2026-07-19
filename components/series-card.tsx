@@ -8,9 +8,10 @@ export function SeriesCard({ series }: { series: Series }) {
   return (
     <Link
       href={`/series/${series.slug}`}
-      className="group flex flex-col gap-2 rounded-lg transition-opacity hover:opacity-90"
+      data-reveal
+      className="group flex flex-col gap-2 rounded-xl"
     >
-      <div className="relative aspect-2/3 overflow-hidden rounded-lg border bg-muted">
+      <div className="relative aspect-2/3 overflow-hidden rounded-xl border bg-muted shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:shadow-lg group-hover:shadow-primary/15">
         {series.cover_url ? (
           <Image
             src={series.cover_url}

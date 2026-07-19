@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SeriesForm } from "@/components/series-form";
 import { ChapterListManager } from "@/components/chapter-list-manager";
+import { CollaboratorsManager } from "@/components/collaborators-manager";
 import { DeleteSeriesButton } from "@/components/delete-series-button";
 
 export const metadata: Metadata = { title: "Edit series" };
@@ -25,7 +26,9 @@ export default async function EditSeriesPage({
 
   const { data: series } = await supabase
     .from("series")
-    .select("*, series_genres(genre_id), chapters(*, pages(count))")
+    .select(
+      "*, series_genres(genre_id), chapters(*, pages(count)), series_collaborators(series_id, user_id, role, profiles(id, username, display_name, avatar_url))"
+    )
     .eq("id", id)
     .eq("creator_id", user.id)
     .single();
@@ -65,6 +68,14 @@ export default async function EditSeriesPage({
         </Button>
       </div>
       <ChapterListManager chapters={chapters} seriesSlug={series.slug} />
+
+      <Separator className="my-10" />
+
+      <h2 className="mb-4 text-xl font-bold">Collaborators</h2>
+      <CollaboratorsManager
+        seriesId={series.id}
+        collaborators={series.series_collaborators ?? []}
+      />
 
       <Separator className="my-10" />
 

@@ -3,6 +3,14 @@ export type ReadingDirection = "ltr" | "rtl";
 export type SeriesStatus = "ongoing" | "completed" | "hiatus";
 export type ChapterStatus = "draft" | "published";
 
+export interface SocialLinks {
+  website?: string;
+  twitter?: string;
+  instagram?: string;
+  youtube?: string;
+  facebook?: string;
+}
+
 export interface Profile {
   id: string;
   username: string;
@@ -10,6 +18,7 @@ export interface Profile {
   bio: string | null;
   avatar_url: string | null;
   country: string | null;
+  social_links?: SocialLinks | null;
   created_at: string;
 }
 
@@ -63,10 +72,33 @@ export interface Page {
 export interface Comment {
   id: string;
   user_id: string;
-  chapter_id: string;
   body: string;
   created_at: string;
   profiles?: Profile;
+}
+
+export interface Collaborator {
+  series_id: string;
+  user_id: string;
+  role: string;
+  profiles?: Profile;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: "new_chapter" | "comment" | "collab_added" | string;
+  data: {
+    series_title?: string;
+    series_slug?: string;
+    chapter_number?: number;
+    chapter_title?: string | null;
+    commenter?: string;
+    preview?: string;
+    role?: string;
+  };
+  read: boolean;
+  created_at: string;
 }
 
 export const LANGUAGES = [

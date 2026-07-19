@@ -10,7 +10,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Profile } from "@/lib/types";
+import type { Profile, SocialLinks } from "@/lib/types";
+
+const SOCIAL_FIELDS: {
+  key: keyof SocialLinks;
+  label: string;
+  placeholder: string;
+}[] = [
+  { key: "website", label: "Website", placeholder: "https://yoursite.com" },
+  { key: "twitter", label: "X / Twitter", placeholder: "https://x.com/you" },
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/you" },
+  { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@you" },
+  { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/you" },
+];
 
 export function ProfileForm({ profile }: { profile: Profile }) {
   const router = useRouter();
@@ -19,6 +31,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   const [bio, setBio] = useState(profile.bio ?? "");
   const [country, setCountry] = useState(profile.country ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+  const [social, setSocial] = useState<SocialLinks>(profile.social_links ?? {});
   const [saving, setSaving] = useState(false);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -43,8 +56,17 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         "Username must be 3-30 characters: lowercase letters, numbers, underscores."
       );
     }
+    const badLink = Object.values(social).find(
+      (v) => v && !/^https?:\/\//.test(v)
+    );
+    if (badLink) {
+      return toast.error(`Links must start with https:// (check "${badLink}")`);
+    }
     setSaving(true);
     const supabase = createClient();
+    const cleanedSocial = Object.fromEntries(
+      Object.entries(social).filter(([, v]) => v && v.trim())
+    );
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -53,6 +75,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         bio: bio || null,
         country: country || null,
         avatar_url: avatarUrl,
+        social_links: cleanedSocial,
       })
       .eq("id", profile.id);
     setSaving(false);
@@ -130,6 +153,31 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           maxLength={60}
           placeholder="e.g. Japan, Brazil, Israel…"
         />
+      </div>
+
+      <div className="grid gap-3">
+        <div>
+          <Label>Social links</Label>
+          <p className="text-xs text-muted-foreground">
+            Shown on your public profile so readers can follow you elsewhere.
+          </p>
+        </div>
+        {SOCIAL_FIELDS.map((f) => (
+          <div key={f.key} className="grid gap-1">
+            <Label htmlFor={`social-${f.key}`} className="text-xs">
+              {f.label}
+            </Label>
+            <Input
+              id={`social-${f.key}`}
+              type="url"
+              value={social[f.key] ?? ""}
+              onChange={(e) =>
+                setSocial((prev) => ({ ...prev, [f.key]: e.target.value }))
+              }
+              placeholder={f.placeholder}
+            />
+          </div>
+        ))}
       </div>
 
       <Button type="submit" disabled={saving} className="self-start">

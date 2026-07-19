@@ -17,11 +17,17 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard");
 
-  const { data: series } = await supabase
-    .from("series")
-    .select("*, chapters(id, status), likes(count), follows(count)")
-    .eq("creator_id", user.id)
-    .order("created_at", { ascending: false });
+  const [{ data: series }, { data: collabRows }] = await Promise.all([
+    supabase
+      .from("series")
+      .select("*, chapters(id, status), likes(count), follows(count)")
+      .eq("creator_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("series_collaborators")
+      .select("role, series(*, profiles(username, display_name))")
+      .eq("user_id", user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -108,6 +114,59 @@ export default async function DashboardPage() {
           })}
         </div>
       )}
+
+      {(() => {
+        // Supabase's untyped join can come back as object or array — normalize.
+        const collabs = (collabRows ?? [])
+          .map((row) => ({
+            role: row.role as string,
+            series: (Array.isArray(row.series)
+              ? row.series[0]
+              : row.series) as {
+              id: string;
+              slug: string;
+              title: string;
+              profiles?: { username?: string; display_name?: string | null };
+            } | null,
+          }))
+          .filter((row) => row.series);
+        return collabs.length > 0 ? (
+          <>
+            <h2 className="mb-4 mt-10 text-xl font-bold">Collaborations</h2>
+            <div className="flex flex-col gap-3">
+              {collabs.map((row) => (
+                <Card key={row.series!.id}>
+                  <CardContent className="flex items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/series/${row.series!.slug}`}
+                          className="font-semibold hover:underline"
+                        >
+                          {row.series!.title}
+                        </Link>
+                        <Badge variant="outline">{row.role}</Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        by{" "}
+                        {row.series!.profiles?.display_name ??
+                          row.series!.profiles?.username}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link
+                        href={`/dashboard/series/${row.series!.id}/chapters/new`}
+                      >
+                        Upload chapter
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        ) : null;
+      })()}
     </div>
   );
 }

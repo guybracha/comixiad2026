@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SeriesActions } from "@/components/series-actions";
+import { CommentsSection } from "@/components/comments-section";
 import { LANGUAGES, type Chapter, type Genre } from "@/lib/types";
 
 interface Props {
@@ -60,11 +61,17 @@ export default async function SeriesPage({ params }: Props) {
   const { data: series } = await supabase
     .from("series")
     .select(
-      "*, profiles(*), genres(*), chapters(*), likes(count), follows(count)"
+      "*, profiles(*), genres(*), chapters(*), likes(count), follows(count), series_collaborators(user_id, role, profiles(username, display_name, avatar_url))"
     )
     .eq("slug", slug)
     .single();
   if (!series) notFound();
+
+  const { data: seriesComments } = await supabase
+    .from("series_comments")
+    .select("*, profiles(*)")
+    .eq("series_id", series.id)
+    .order("created_at", { ascending: false });
 
   const isOwner = user?.id === series.creator_id;
   const chapters: Chapter[] = [...(series.chapters ?? [])]
@@ -138,20 +145,51 @@ export default async function SeriesPage({ params }: Props) {
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <h1 className="text-3xl font-bold">{series.title}</h1>
 
-          <Link
-            href={`/creator/${series.profiles.username}`}
-            className="flex w-fit items-center gap-2 hover:underline"
-          >
-            <Avatar className="size-7">
-              <AvatarImage src={series.profiles.avatar_url ?? undefined} />
-              <AvatarFallback>
-                {series.profiles.username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium">
-              {series.profiles.display_name ?? series.profiles.username}
-            </span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Link
+              href={`/creator/${series.profiles.username}`}
+              className="flex w-fit items-center gap-2 hover:underline"
+            >
+              <Avatar className="size-7">
+                <AvatarImage src={series.profiles.avatar_url ?? undefined} />
+                <AvatarFallback>
+                  {series.profiles.username.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">
+                {series.profiles.display_name ?? series.profiles.username}
+              </span>
+            </Link>
+            {series.series_collaborators?.map(
+              (c: {
+                user_id: string;
+                role: string;
+                profiles: {
+                  username: string;
+                  display_name: string | null;
+                  avatar_url: string | null;
+                };
+              }) => (
+                <Link
+                  key={c.user_id}
+                  href={`/creator/${c.profiles.username}`}
+                  className="flex w-fit items-center gap-2 text-muted-foreground hover:underline"
+                  title={c.role}
+                >
+                  <Avatar className="size-6">
+                    <AvatarImage src={c.profiles.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[10px]">
+                      {c.profiles.username.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">
+                    {c.profiles.display_name ?? c.profiles.username}
+                    <span className="ml-1 text-xs">({c.role})</span>
+                  </span>
+                </Link>
+              )
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge variant="secondary" className="capitalize">
@@ -238,6 +276,16 @@ export default async function SeriesPage({ params }: Props) {
           ))}
         </div>
       )}
+
+      <div className="mt-12">
+        <CommentsSection
+          table="series_comments"
+          targetId={series.id}
+          userId={user?.id ?? null}
+          comments={seriesComments ?? []}
+          title="Discussion"
+        />
+      </div>
     </div>
   );
 }

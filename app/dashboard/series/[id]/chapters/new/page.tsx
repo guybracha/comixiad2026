@@ -19,11 +19,17 @@ export default async function NewChapterPage({
 
   const { data: series } = await supabase
     .from("series")
-    .select("id, title, creator_id, chapters(number)")
+    .select("id, title, creator_id, chapters(number), series_collaborators(user_id)")
     .eq("id", id)
-    .eq("creator_id", user.id)
     .single();
   if (!series) notFound();
+
+  const canUpload =
+    series.creator_id === user.id ||
+    (series.series_collaborators ?? []).some(
+      (c: { user_id: string }) => c.user_id === user.id
+    );
+  if (!canUpload) notFound();
 
   const maxNumber = Math.max(
     0,

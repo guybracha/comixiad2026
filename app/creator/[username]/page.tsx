@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { MapPin } from "lucide-react";
+import { Globe, MapPin } from "lucide-react";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  XIcon,
+  YoutubeIcon,
+} from "@/components/brand-icons";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SeriesGrid } from "@/components/series-card";
@@ -95,6 +101,35 @@ export default async function CreatorPage({ params }: Props) {
             </p>
           )}
           {profile.bio && <p className="mt-2 max-w-xl text-sm">{profile.bio}</p>}
+          {profile.social_links &&
+            Object.keys(profile.social_links).length > 0 && (
+              <div className="mt-3 flex items-center justify-center gap-1 sm:justify-start">
+                {(
+                  [
+                    ["website", Globe, "Website"],
+                    ["twitter", XIcon, "X / Twitter"],
+                    ["instagram", InstagramIcon, "Instagram"],
+                    ["youtube", YoutubeIcon, "YouTube"],
+                    ["facebook", FacebookIcon, "Facebook"],
+                  ] as const
+                ).map(([key, Icon, label]) => {
+                  const href = profile.social_links?.[key];
+                  if (!href) return null;
+                  return (
+                    <a
+                      key={key}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      title={label}
+                      className="rounded-full border p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                    >
+                      <Icon className="size-4" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
         </div>
       </div>
 
