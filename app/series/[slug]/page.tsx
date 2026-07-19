@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BookOpen, Globe, ImageIcon } from "lucide-react";
+import { BookOpen, Eye, Globe, ImageIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +19,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("series")
-    .select("title, description")
+    .select("title, description, cover_url, language, profiles(username, display_name)")
     .eq("slug", slug)
     .single();
   if (!data) return { title: "Not found" };
-  return { title: data.title, description: data.description ?? undefined };
+
+  const profileRel = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+  const creator = profileRel?.display_name ?? profileRel?.username;
+  const description =
+    data.description ??
+    `Read ${data.title}${creator ? ` by ${creator}` : ""} free on Comixiad.`;
+
+  return {
+    title: data.title,
+    description,
+    alternates: { canonical: `/series/${slug}` },
+    openGraph: {
+      type: "article",
+      title: data.title,
+      description,
+      url: `/series/${slug}`,
+      images: data.cover_url ? [{ url: data.cover_url }] : undefined,
+    },
+    twitter: {
+      card: data.cover_url ? "summary_large_image" : "summary",
+      title: data.title,
+      description,
+      images: data.cover_url ? [data.cover_url] : undefined,
+    },
+  };
 }
 
 export default async function SeriesPage({ params }: Props) {
@@ -72,8 +96,27 @@ export default async function SeriesPage({ params }: Props) {
   const languageName =
     LANGUAGES.find((l) => l.code === series.language)?.name ?? series.language;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ComicSeries",
+    name: series.title,
+    description: series.description ?? undefined,
+    image: series.cover_url ?? undefined,
+    inLanguage: series.language,
+    genre: series.genres?.map((g: Genre) => g.name),
+    author: {
+      "@type": "Person",
+      name: series.profiles.display_name ?? series.profiles.username,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/creator/${series.profiles.username}`,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="flex flex-col gap-8 sm:flex-row">
         <div className="relative mx-auto aspect-2/3 w-48 shrink-0 overflow-hidden rounded-lg border bg-muted sm:mx-0 sm:w-56">
           {series.cover_url ? (
@@ -119,6 +162,9 @@ export default async function SeriesPage({ params }: Props) {
             </Badge>
             <Badge variant="outline">
               <Globe className="size-3" /> {languageName}
+            </Badge>
+            <Badge variant="outline">
+              <Eye className="size-3" /> {series.view_count ?? 0} views
             </Badge>
             {series.genres?.map((g: Genre) => (
               <Link key={g.id} href={`/browse?genre=${g.slug}`}>

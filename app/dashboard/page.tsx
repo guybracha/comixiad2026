@@ -93,8 +93,8 @@ export default async function DashboardPage() {
                       {published} published {published === 1 ? "chapter" : "chapters"}
                       {drafts > 0 && ` · ${drafts} draft${drafts === 1 ? "" : "s"}`}
                       {" · "}
-                      {s.likes?.[0]?.count ?? 0} likes · {s.follows?.[0]?.count ?? 0}{" "}
-                      followers
+                      {s.view_count ?? 0} views · {s.likes?.[0]?.count ?? 0} likes ·{" "}
+                      {s.follows?.[0]?.count ?? 0} followers
                     </p>
                   </div>
                   <Button variant="outline" size="sm" asChild>

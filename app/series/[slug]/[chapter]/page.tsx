@@ -17,7 +17,26 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, chapter } = await params;
-  return { title: `${slug.replace(/-/g, " ")} — Chapter ${chapter}` };
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("series")
+    .select("title, cover_url")
+    .eq("slug", slug)
+    .single();
+  const title = data
+    ? `${data.title} — Chapter ${chapter}`
+    : `Chapter ${chapter}`;
+  return {
+    title,
+    description: `Read chapter ${chapter} of ${data?.title ?? "this comic"} free on Comixiad.`,
+    alternates: { canonical: `/series/${slug}/${chapter}` },
+    openGraph: {
+      type: "article",
+      title,
+      url: `/series/${slug}/${chapter}`,
+      images: data?.cover_url ? [{ url: data.cover_url }] : undefined,
+    },
+  };
 }
 
 export default async function ChapterPage({ params }: Props) {
@@ -44,6 +63,9 @@ export default async function ChapterPage({ params }: Props) {
 
   const chapter = visibleChapters.find((c) => Number(c.number) === chapterNumber);
   if (!chapter) notFound();
+
+  // Count a view for the series (ignore errors — a lost view is fine).
+  await supabase.rpc("increment_series_views", { sid: series.id });
 
   const idx = visibleChapters.indexOf(chapter);
   const prev = idx > 0 ? visibleChapters[idx - 1] : null;

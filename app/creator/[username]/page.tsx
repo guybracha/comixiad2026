@@ -12,7 +12,31 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  return { title: `@${username}` };
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("username, display_name, bio, avatar_url, country")
+    .eq("username", username)
+    .single();
+  if (!data) return { title: `@${username}` };
+
+  const name = data.display_name ?? data.username;
+  const description =
+    data.bio ??
+    `Comics and webtoons by ${name}${data.country ? ` from ${data.country}` : ""} on Comixiad.`;
+
+  return {
+    title: `${name} (@${data.username})`,
+    description,
+    alternates: { canonical: `/creator/${username}` },
+    openGraph: {
+      type: "profile",
+      title: `${name} (@${data.username})`,
+      description,
+      url: `/creator/${username}`,
+      images: data.avatar_url ? [{ url: data.avatar_url }] : undefined,
+    },
+  };
 }
 
 export default async function CreatorPage({ params }: Props) {
@@ -37,8 +61,22 @@ export default async function CreatorPage({ params }: Props) {
     likes_count: s.likes?.[0]?.count ?? 0,
   }));
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: profile.display_name ?? profile.username,
+    alternateName: `@${profile.username}`,
+    description: profile.bio ?? undefined,
+    image: profile.avatar_url ?? undefined,
+    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/creator/${profile.username}`,
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mb-10 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
         <Avatar className="size-24">
           <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} />

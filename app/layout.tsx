@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
@@ -15,13 +16,41 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Comixiad — Share Your Comics With the World",
     template: "%s | Comixiad",
   },
   description:
-    "A platform for comic creators around the world to publish, share and read comics and webtoons online.",
+    "A free platform for comic creators around the world to publish, share and read comics, manga and webtoons online in many languages.",
+  keywords: [
+    "comics",
+    "webtoon",
+    "manga",
+    "read comics online",
+    "publish comics",
+    "indie comics",
+    "comic platform",
+    "international comics",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "Comixiad",
+    title: "Comixiad — Share Your Comics With the World",
+    description:
+      "Publish and read comics, manga and webtoons from creators in every country — free.",
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Comixiad — Share Your Comics With the World",
+    description:
+      "Publish and read comics, manga and webtoons from creators in every country — free.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -41,6 +70,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Toaster richColors position="bottom-center" />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

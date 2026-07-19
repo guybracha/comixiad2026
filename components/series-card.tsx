@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ImageIcon } from "lucide-react";
+import { Eye, Heart, ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { Series } from "@/lib/types";
+import { languageInfo, type Series } from "@/lib/types";
 
 export function SeriesCard({ series }: { series: Series }) {
   return (
@@ -30,6 +30,12 @@ export function SeriesCard({ series }: { series: Series }) {
         >
           {series.format === "webtoon" ? "Webtoon" : "Comic"}
         </Badge>
+        <span
+          className="absolute right-2 top-2 rounded bg-black/50 px-1 text-sm backdrop-blur"
+          title={languageInfo(series.language).name}
+        >
+          {languageInfo(series.language).flag}
+        </span>
       </div>
       <div className="px-1">
         <h3 className="line-clamp-1 font-semibold leading-tight">{series.title}</h3>
@@ -37,11 +43,16 @@ export function SeriesCard({ series }: { series: Series }) {
           <span className="line-clamp-1">
             {series.profiles ? `by ${series.profiles.display_name ?? series.profiles.username}` : ""}
           </span>
-          {typeof series.likes_count === "number" && (
-            <span className="flex shrink-0 items-center gap-1">
-              <Heart className="size-3" /> {series.likes_count}
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="flex items-center gap-1">
+              <Eye className="size-3" /> {series.view_count ?? 0}
             </span>
-          )}
+            {typeof series.likes_count === "number" && (
+              <span className="flex items-center gap-1">
+                <Heart className="size-3" /> {series.likes_count}
+              </span>
+            )}
+          </span>
         </div>
       </div>
     </Link>
