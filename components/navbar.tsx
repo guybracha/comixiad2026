@@ -6,19 +6,24 @@ import { UserMenu } from "@/components/user-menu";
 import type { Profile } from "@/lib/types";
 
 export async function Navbar() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let profile: Profile | null = null;
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    profile = data;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      profile = data;
+    }
+  } catch {
+    // Misconfigured Supabase env must not take down the whole layout;
+    // render the logged-out navbar instead.
   }
 
   return (
